@@ -48,6 +48,9 @@ The system can:
 
 # Core Architecture
 
+<p align="center">
+  <img src="AI Receptionist.png" width="600" title="System Architecture">
+</p>
 
 ---
 
