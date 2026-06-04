@@ -19,7 +19,7 @@ import dateparser
 
 
 class RouteResponse(BaseModel):
-    intent: Literal[ "booking", "cancel", "faq", "emergency", "nonsense", "completed"] = Field(
+    intent: Literal[ "booking", "cancel", "show_booking", "faq", "emergency", "nonsense", "completed"] = Field(
         description="Categorize the user's query into: 'faq', 'booking', 'emergency', or 'nonsense'."
     )
     # confidence: float = Field(
@@ -60,6 +60,7 @@ def router_node(state: ReceptionistState):
         - emergency
         - nonsense
         - cancel
+        - show_booking
 
         IMPORTANT:
         Use BOTH:
@@ -131,6 +132,15 @@ def router_node(state: ReceptionistState):
         - user wants to cancel their appointment.
         - user wants to cancel their existing appointment
         - user explicitly says to cancel their booking.
+        - user says to cancel booking
+
+        6. show_boooking
+        Use if user wants to:
+        - view appointment
+        - check appointment
+        - know booking details
+        - know appointment date
+        - know appointment time
 
         CRITICAL RULES:
 
@@ -177,6 +187,8 @@ def routing_logic(state: ReceptionistState):
         return "appointment_manager"
     elif intent == "cancel":
         return "cancel_booking"
+    elif intent == "show_booking":
+        return "show_booking"
     else:
         return "refusal_node"
 
@@ -658,3 +670,28 @@ def cancel_booking_node(state: ReceptionistState):
                     "active_workflow": None}
         
     
+def show_booking_node(state: ReceptionistState):
+    appointment= state.get("active_appointment")
+
+    print(f"Active Appointment: {appointment}")
+
+    if not appointment:
+        response = (
+            "I couldn't find any active appointment."
+        )
+        return {
+            "clinic_response": response,
+            "messages": [AIMessage(content= response)]
+        }
+    
+    response= (
+        f"You have an appointment scheduled on "
+        f"{appointment['date']} at "
+        f"{appointment['time']} for "
+        f"{appointment['service']}."
+    )
+    return {
+        "clinic_response": response,
+        "messages": [AIMessage(content= response)]
+        }
+

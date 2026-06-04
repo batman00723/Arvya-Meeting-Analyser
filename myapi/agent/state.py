@@ -20,6 +20,3 @@ class ReceptionistState(TypedDict):
     active_workflow: Optional[str]
 
     active_appointment: Annotated[Optional[dict], merge_dict]
-
-    pending_action: Optional[str]
-    awaiting_confirmation: Optional[bool]
