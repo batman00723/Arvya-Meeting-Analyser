@@ -1,4 +1,4 @@
-from .nodes import router_node, faq_node, booking_node, emergency_node, refusal_node, check_availabiity_node, routing_logic, booking_followup_node, booking_validate_node, booking_validation_router
+from .nodes import router_node, faq_node, booking_node, emergency_node, refusal_node, check_availabiity_node, routing_logic, booking_followup_node, booking_validate_node, booking_validation_router, cancel_booking_node
 from langgraph.graph import StateGraph, END
 from functools import partial
 from .state import ReceptionistState
@@ -30,6 +30,7 @@ def create_receptionist_agent(llm):
     workflow.add_node("availability_node", check_availabiity_node)
     workflow.add_node("emergency_escalation", emergency_node)
     workflow.add_node("refusal_node", refusal_node)
+    workflow.add_node("cancel_booking", cancel_booking_node)
 
     workflow.set_entry_point("router")
 
@@ -40,7 +41,8 @@ def create_receptionist_agent(llm):
             "emergency_escalation": "emergency_escalation",
             "knowledge_base": "knowledge_base",
             "appointment_manager": "appointment_manager",
-            "refusal_node": "refusal_node"
+            "refusal_node": "refusal_node",
+            "cancel_booking": "cancel_booking"
         }
     )
     workflow.add_edge("appointment_manager", "booking_validation")
@@ -58,6 +60,7 @@ def create_receptionist_agent(llm):
     workflow.add_edge("knowledge_base", END)
     workflow.add_edge("emergency_escalation", END)
     workflow.add_edge("refusal_node", END)
+    workflow.add_edge("cancel_booking", END)
     workflow.add_edge("availability_node", END)
     workflow.add_edge("booking_followup", END)
 

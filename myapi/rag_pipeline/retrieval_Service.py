@@ -1,7 +1,7 @@
 from myapi.models import DocumentChunk
 from pgvector.django import CosineDistance
 from myapi.rag_pipeline.rrf import reciprocal_rank_fusion
-from myapi.rag_pipeline.reranker import RerankService
+#from myapi.rag_pipeline.reranker import RerankService
 from django.contrib.postgres.search import SearchQuery, SearchRank
 
 class HybridRetrievalRerankService:
@@ -24,7 +24,6 @@ class HybridRetrievalRerankService:
         canditate_ids = [item[0] for item in fused_score[:3]]
         candidate_context_chunks = list(DocumentChunk.objects.filter(id__in=canditate_ids))
 
-        print("chunks found")
         # final_context_objects= RerankService.get_top_reranked_results(
         #    query= query,
         #    chunks= candidate_context_chunks,

@@ -8,7 +8,6 @@ def document_processing(doc_id):
         document= Document.objects.get(id= doc_id)
         # Parse the content
         text= extract_content(document.document.path, document.file_type)
-        print("Document Parsed")
 
         if text:
             # Get Parsed content from DB
@@ -19,7 +18,6 @@ def document_processing(doc_id):
 
             # Process the Document into ingestion Pipeline
             chunk_count= pipeline.process_document(document, text)
-            print("Document Processed")
 
             # Create vectors of chunks
             DocumentChunk.objects.filter(document_id= doc_id).update(

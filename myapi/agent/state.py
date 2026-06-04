@@ -17,4 +17,9 @@ class ReceptionistState(TypedDict):
     booking_data: Annotated[Optional[dict], merge_dict] # eg {"date": "2026-05-12", "time": "14:00", "service": "Cleaning"}
     clinic_response: str # final response for user
     missing_booking_fields: Optional[list]
+    active_workflow: Optional[str]
 
+    active_appointment: Annotated[Optional[dict], merge_dict]
+
+    pending_action: Optional[str]
+    awaiting_confirmation: Optional[bool]

@@ -35,7 +35,7 @@ class CalService:
 
     def create_booking(self, booking_data, user_details):
         patient_phone = user_details.get("phone", "000000")
-        synthetic_email = f"{patient_phone}@clinic-internal.com"
+        synthetic_email = f"hellodemo@clinic-internal.com"
         url = f"{self.base_url}/bookings"
         payload = {
             "start": booking_data["utc_time"],
@@ -55,5 +55,29 @@ class CalService:
             headers=self.headers,
             json=payload
         )
+        
+        print(response.status_code)
+        print(response.text)
+
+
         response.raise_for_status()
+
+        
+        return response.json()
+    
+    def cancel_booking(self, booking_uid):
+        url= f"{self.base_url}/bookings/{booking_uid}/cancel"
+
+        payload= {
+            "cancellationReason": "Patient requested cancellation"
+        }
+
+        response= requests.post(
+            url, 
+            headers= self.headers,
+            json= payload
+        )
+        
+        response.raise_for_status()
+
         return response.json()

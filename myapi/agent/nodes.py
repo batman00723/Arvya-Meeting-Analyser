@@ -10,16 +10,21 @@ from myapi.rag_pipeline.retrieval_Service import HybridRetrievalRerankService
 from langchain_core.messages import SystemMessage, HumanMessage, trim_messages, ToolMessage, AIMessage
 from typing import Optional
 from myapi.agent.cal_service import CalService      
-from myapi.agent.email_service import send_emergency_alert
+from myapi.agent.email_service import send_emergency_alert, send_cancellation_alert
+from typing import Literal
+from datetime import datetime
+import pytz
+import dateparser
+
 
 
 class RouteResponse(BaseModel):
-    intent: str = Field(
+    intent: Literal[ "booking", "cancel", "faq", "emergency", "nonsense", "completed"] = Field(
         description="Categorize the user's query into: 'faq', 'booking', 'emergency', or 'nonsense'."
     )
-    confidence: float = Field(
-        description="A score between 0.0 and 1.0 reflecting how sure you are of this intent."
-    )
+    # confidence: float = Field(
+    #     description="A score between 0.0 and 1.0 reflecting how sure you are of this intent."
+    # )
 
 trimmer= trim_messages(
     max_tokens= 500,
@@ -30,30 +35,112 @@ trimmer= trim_messages(
 )
 
 def router_node(state: ReceptionistState):
-
     message_history= trimmer.invoke(state["messages"])
     query= state["query"]
 
-    print(f"Past Messages Count: {len(message_history)}")
     print(f"{message_history}")
 
     if not message_history:
         return {"query": query }
     
+    if state.get("active_workflow") == "booking" and state.get("missing_booking_fields"):
+        return {
+            "intent": "booking",
+            "query": query
+        }
+    
     system_instruction = """
-        You are a Dental Receptionist Router. Your goal is to map the user's LATEST request to the correct internal department.
+        You are a strict intent classification router for a dental clinic AI system.
 
-        DEPARTMENTS:
-        - 'emergency': Use ONLY if the user reports pain, swelling, bleeding, or a broken tooth or something fatal or life threatning.
-        - 'booking': Use if the user wants to schedule, change, or cancel an appointment, OR if they are providing details (like a date/time) requested by the assistant.
-        - 'faq': Use for questions about pricing, insurance, location, or "how" procedures work, dental questions.
-        - 'nonsense': Use for ambigious chats with low confidence i.e less than 0.6, greetings ("Hi"),  or off-topic chat.
+        Your job is ONLY to classify the user's latest message into ONE category.
 
-        RULES:
-        1. If the request is ambiguous or you are less than 70 percent sure, 
-        provide a low confidence score.
-        2. If a user asks a question AND wants to book (e.g., "How much is it and can I come Friday?"), select 'booking'.
-        3. CONTEXT: Look at the history. If the last AI message asked for a date and the user says "Friday," that is a 'booking' intent.
+        Valid categories:
+        - booking
+        - faq
+        - emergency
+        - nonsense
+        - cancel
+
+        IMPORTANT:
+        Use BOTH:
+        1. latest user message
+        2. recent conversation context
+
+        ROUTING RULES:
+
+        1. booking
+        Use booking if:
+        - user wants to book appointment
+        - user provides booking details:
+        date, time, doctor, treatment
+        - assistant previously asked for missing booking information and user is replying with partial info
+
+        Examples:
+        - "Friday"
+        - "2 pm"
+        - "yes book it"
+        - "next monday"
+        - "11 am"
+        - "book"
+
+        2. emergency
+        Use ONLY for urgent medical situations:
+        - severe pain
+        - swelling
+        - bleeding
+        - broken tooth
+        - infection
+        - trauma
+        - medical emergency
+        - life threatening situation
+
+        DO NOT classify normal dental questions as emergency.
+
+        3. faq
+        Use for:
+        - insurance
+        - pricing
+        - clinic timings
+        - procedures
+        - treatments
+        - location
+        - dental questions
+        - services offered
+
+        Examples:
+        - "Do you offer root canal?"
+        - "What insurance do you accept?"
+        - "Where are you located?"
+
+        4. nonsense
+        Use if:
+        - greeting only
+        - random/off-topic message
+        - unclear meaning
+        - abusive message without actionable intent
+        - confidence is low
+
+        Examples:
+        - "hi"
+        - "lol"
+        - "are you dead"
+        - "what's up"
+
+        5. cancel
+        Use if:
+        - user wants to cancel their appointment.
+        - user wants to cancel their existing appointment
+        - user explicitly says to cancel their booking.
+
+        CRITICAL RULES:
+
+        - NEVER hallucinate missing intent.
+        - If uncertain, choose nonsense.
+        - If booking workflow is already active, prioritize booking classification.
+        - Single-word replies like "Friday" or "2 pm" are booking ONLY if conversation context indicates active booking flow.
+        - Do NOT overthink.
+        - Output ONLY the category name.
+
     """
     
     message_for_llm= [SystemMessage(content= system_instruction)] + message_history
@@ -66,9 +153,9 @@ def router_node(state: ReceptionistState):
         response = structured_llm.invoke(message_for_llm)
         intent = response.intent
         print(intent)
-        print(response.confidence)
-        if response.confidence < 0.6:
-            intent= "nonsense" 
+        # print(response.confidence)
+        # if response.confidence < 0.6:
+        #     intent= "nonsense" 
     except Exception as e:
         print(f"Router Error: {e}")
         intent = "faq"
@@ -88,6 +175,8 @@ def routing_logic(state: ReceptionistState):
         return "knowledge_base"
     elif intent == "booking":
         return "appointment_manager"
+    elif intent == "cancel":
+        return "cancel_booking"
     else:
         return "refusal_node"
 
@@ -98,16 +187,16 @@ hybrid_retrieval= HybridRetrievalRerankService()
 
 
 def faq_node(state: ReceptionistState):
+    print("FAQ Node Activated")
+    
     current_intent= state["intent"]
     print(current_intent)
-    print("FAQ Node Activated")
     query= state["query"]
 
     query_vector= embedder.get_embedding(query)
 
     top_chunks= hybrid_retrieval.get_hybrid_reranked_content(query= query, query_vector= query_vector)
 
-    print("Top chunks found: Sending them to LLM")
 
     content_chunks = "\n\n".join([c.chunk for c in top_chunks])
 
@@ -209,13 +298,10 @@ class BookingExtraction(BaseModel):
         description="Dental service requested by user"
     )
 
-from datetime import datetime
-import pytz
-import dateparser
 
 
 def booking_node(state: ReceptionistState):
-    print("Booking Node Activated")
+
     tz_ist = pytz.timezone("Asia/Kolkata")
     now_ist = datetime.now(tz=tz_ist)
 
@@ -227,24 +313,96 @@ def booking_node(state: ReceptionistState):
 
     )
     system_prompt = f"""
-    You are a data extraction system.
+        You are a strict booking information extraction system.
 
-    Extract:
-    - date phrase
-    - time phrase
-    - service
+        Your ONLY job is to extract structured booking fields from the user's latest message.
 
-    Rules:
-    - Return raw phrases only
-    - Do not calculate dates
-    - If value missing return null
-    - Do not infer generic booking phrases as dates
+        Extract:
+        - date_phrase
+        - time_phrase
+        - service
 
-    Existing Booking Data:
-    {current_booking}
+        IMPORTANT:
+        - Extract ONLY explicitly mentioned information.
+        - NEVER infer missing fields.
+        - NEVER guess.
+        - NEVER calculate actual dates.
+        - NEVER rewrite values.
+        - Return raw user phrases exactly as written.
+        - Use recent conversation context ONLY to understand references, not to invent values.
 
-    User Query:
-    {query}
+        FIELD RULES:
+
+        1. date_phrase
+        Extract ONLY:
+        - weekdays
+        - dates
+        - relative dates
+        - booking day references
+
+        Examples:
+        - "Friday"
+        - "next monday"
+        - "tomorrow"
+        - "May 22"
+
+        DO NOT extract:
+        - treatment names
+        - generic booking phrases
+        - unrelated text
+
+        2. time_phrase
+        Extract ONLY explicit times.
+
+        Examples:
+        - "2 pm"
+        - "11:30"
+        - "morning"
+        - "afternoon"
+
+        DO NOT infer times.
+
+        3. service
+        Extract ONLY explicitly mentioned dental services.
+
+        Examples:
+        - "root canal"
+        - "Invisalign"
+        - "cleaning"
+
+        DO NOT infer service from context.
+
+        CONTEXT RULES:
+
+        - If user says:
+        "yes book it"
+        → DO NOT invent missing fields.
+
+        - If user says:
+        "Friday at 2 pm"
+        → extract both.
+
+        - If user only says:
+        "2 pm"
+        → extract ONLY time_phrase.
+
+        - If a field is not explicitly present in latest message:
+        return null for that field.
+
+        EXISTING BOOKING STATE:
+        {current_booking}
+
+        USER MESSAGE:
+        {query}
+
+        Return ONLY valid JSON.
+
+        Example:
+        {{
+        "date_phrase": null,
+        "time_phrase": "2 pm",
+        "service": "root canal"
+        }}
     """
 
     extraction = structured_llm.invoke(system_prompt)
@@ -328,11 +486,11 @@ def booking_node(state: ReceptionistState):
             print("Date parsing failed")
 
     return {
-        "booking_data": updated_booking
+        "booking_data": updated_booking,
+        "active_workflow": "booking"
     }
 
 def booking_validate_node(state: ReceptionistState):
-    print("Booking Validation Node Activated")
 
     booking = state.get("booking_data") or {}
     
@@ -348,7 +506,8 @@ def booking_validate_node(state: ReceptionistState):
     print(booking)
 
     return {
-        "missing_booking_fields": missing
+        "missing_booking_fields": missing,
+        "active_workflow": "booking"
     }
 
 def booking_validation_router(state: ReceptionistState):
@@ -372,16 +531,20 @@ def booking_followup_node(state: ReceptionistState):
 
     return {
         "messages": [AIMessage(content= response_text)],
-        "clinic_response": response_text
+        "clinic_response": response_text,
+        "active_workflow": "booking"
     }
 
 
 def check_availabiity_node(state: ReceptionistState):
-    print("check availability node activated")
     cal= CalService()
     booking= state["booking_data"]
     print("BOOKING TIME:", booking["time"])
+    print("BOOKING ATTEMPT")
+    print(booking)
 
+    print("ACTIVE APPOINTMENT")
+    print(state.get("active_appointment") or {})
 
     try:
         print(booking["date"])
@@ -390,23 +553,30 @@ def check_availabiity_node(state: ReceptionistState):
         is_available = any(booking["utc_time"] == slot["time"] for slot in available_slots)
 
         if is_available:
-            cal.create_booking(booking, {"phone": state.get("user_phone", "000000")})
+            booking_response= cal.create_booking(booking, {"phone": state.get("user_phone", "000000")})
             final_message= f"Done! Your booking is officially confirmed for {booking['time']} on {booking['date']}. See you then!"
-            return {"clinic_response": final_message, "intent": "confirmed"}
+            print(f"Booking Response: {booking_response}")
+            return {"clinic_response": final_message, "intent": "completed", "booking_data": {}, "missing_booking_fields": [], "active_workflow": None,  "active_appointment": {
+                    "booking_uid": booking_response["data"]["uid"],
+                    "booking_id": booking_response["data"]["id"],
+                    "date": booking["date"],
+                    "time": booking["time"],
+                    "service": booking["service"]
+                     }}
+        
         else:
             # MVP Naive fail message will change it later and add neaerest slots available instead of hard slots
-            fail_message= """This time slot is not available try these slots 9:00 AM 9:50 AM 10:40 AM 11:30 AM 12:20 PM 1:10 PM 2:00 PM 2:50 PM 3:40 PM"""
+            fail_message = f"This time slot is not available. Try these slots: {available_slots}"
             return {"clinic_response": fail_message, "intent": "booking"}
     except Exception as e:
         # If api is down then manual entry by human receptionist.
         error_message= "There is technical glitch, but I have informed your booking details to my supervisor he will handle and send you conformation messge soon.."
         print(e)
-        return {"clinic_response": error_message, "intent": "emergency"}
+        return {"clinic_response": error_message, "intent": "emergency", "active_workflow": None}
     
 
 # For MVP only email service later will more channel alerts.
 def emergency_node(state: ReceptionistState):
-    print("Emergency Node activated")
     phone= state.get("user_phone", "No Phone provided")
     issue= state.get("query", "No issue provided")
 
@@ -423,3 +593,68 @@ def emergency_node(state: ReceptionistState):
         "messages": [AIMessage(content=emergency_message)],
         "clinic_response": emergency_message
     }
+
+
+
+def cancel_booking_node(state: ReceptionistState):
+    appointment= state.get("active_appointment")
+    print(f"Active Appointment: {appointment}")
+    
+    if not appointment:
+        response= ( "I couldn't find any active appointment to cancel"
+        )
+        return {
+            "clinic_response": response,
+            "messages": [
+                AIMessage(content= response)
+            ]
+            }
+    
+    cal= CalService()
+
+    try:
+        result= cal.cancel_booking(
+            appointment["booking_uid"]
+        )
+        print(result)
+
+        response= f"Your appointment on {appointment['date']} at {appointment['time']} has been cancelled."
+        return{
+            "clinic_response": response,
+            "messages": [
+                AIMessage(content=response)
+            ],
+            "active_appointment": {},
+            "booking_data": {},
+            "active_workflow": None,
+            "intent": "completed"
+        }
+    except Exception as e:
+        print(e)
+
+        try:
+            send_cancellation_alert(
+                patient_phone= state["user_phone"],
+                patient_issue= appointment
+            )
+
+            response= "There is a techincal glitch, I have send your cancellation request to my supervisor."
+
+            return {
+            "clinic_response": response,
+            "messages": [
+                AIMessage(content=response)
+            ],
+            "active_workflow": None,
+            "intent": "completed"
+            }
+        
+        except Exception as e:
+
+            print(e)
+
+            return {"clinic_response": "There was a technical issue processing your cancellation request. Please contact the clinic directly.",
+                    "intent": "completed",
+                    "active_workflow": None}
+        
+    
