@@ -42,7 +42,7 @@ Email Report Node
 ## Email Sccreenshot
 
 <p align="center">
-  <img src="" width="600" title="System Architecture">
+  <img src="Screenshot 2026-06-06 215846.png" width="600" title="Email test ss">
 </p>
 
 ## Extracted Fields
