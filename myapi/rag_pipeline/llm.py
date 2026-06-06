@@ -10,8 +10,8 @@ class LLMService:
         self.model= ChatGroq(
             api_key= settings.groq_api_key.get_secret_value(),
             model= "meta-llama/llama-4-scout-17b-16e-instruct",
-            temperature= 0.5,
-            max_tokens= 150
+            temperature= 0.1,
+            max_tokens= 2000
         )
     def invoke(self, messages):
         response= self.model.invoke(messages)
