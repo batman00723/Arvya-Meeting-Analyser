@@ -9,7 +9,7 @@ class LLMService:
     def __init__(self):
         self.model= ChatGroq(
             api_key= settings.groq_api_key.get_secret_value(),
-            model= "meta-llama/llama-4-scout-17b-16e-instruct",
+            model= "qwen/qwen3-32b",
             temperature= 0.1,
             max_tokens= 2000
         )

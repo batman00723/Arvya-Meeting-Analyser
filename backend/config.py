@@ -23,7 +23,6 @@ class Settings(BaseSettings):
 
 
     resend_api_key: SecretStr
-    cal_api_key: SecretStr
     groq_api_key: SecretStr
 
 

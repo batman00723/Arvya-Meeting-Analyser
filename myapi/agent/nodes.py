@@ -146,8 +146,7 @@ def analyse_meeting_node(state: MeetingState):
         "status": "analysed"
     }
 
-def save_report_node(state):
-
+def save_report_node(state: MeetingState):
     analysis = state["result"]
 
     MeetingReport.objects.create(
