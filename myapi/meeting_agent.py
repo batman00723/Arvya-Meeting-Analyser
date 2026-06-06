@@ -29,12 +29,6 @@ class ChatOperationController(ControllerBase):
             response= final_state.get("result")
             print("Agent Ran Successfully.")
 
-            analysis = final_state["result"]
-            MeetingReport.objects.create(
-                transcript= payload.transcript,
-                analysis=analysis.model_dump()
-            )
-
             return {
                 "analysis": response
             }

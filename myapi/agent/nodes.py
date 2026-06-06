@@ -2,6 +2,7 @@ from myapi.agent.llm import LLMService
 from .state import MeetingState
 from myapi.agent.email_service import send_report
 from .schemas import MeetingAnalysis
+from myapi.models import MeetingReport
 
 
 llm = LLMService()
@@ -144,6 +145,18 @@ def analyse_meeting_node(state: MeetingState):
         "result": result,
         "status": "analysed"
     }
+
+def save_report_node(state):
+
+    analysis = state["result"]
+
+    MeetingReport.objects.create(
+        transcript=state["transcript"],
+        analysis=analysis.model_dump()
+    )
+
+    return state
+
     
 
 def send_email_node(state: MeetingState):
