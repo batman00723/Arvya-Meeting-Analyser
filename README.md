@@ -39,6 +39,12 @@ Save Report Node
 Email Report Node
 ```
 
+## Email Sccreenshot
+
+<p align="center">
+  <img src="" width="600" title="System Architecture">
+</p>
+
 ## Extracted Fields
 
 * Summary
