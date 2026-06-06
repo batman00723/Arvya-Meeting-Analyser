@@ -1,4 +1,4 @@
-from myapi.rag_pipeline.llm import LLMService
+from myapi.agent.llm import LLMService
 from .state import MeetingState
 from myapi.agent.email_service import send_report
 from .schemas import MeetingAnalysis

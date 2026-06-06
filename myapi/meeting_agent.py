@@ -1,5 +1,5 @@
 from ninja_extra import ControllerBase, api_controller, http_post
-from myapi.rag_pipeline.llm import LLMService
+from myapi.agent.llm import LLMService
 from backend.config import settings
 from myapi.agent.graph import create_meeting_agent
 import logging

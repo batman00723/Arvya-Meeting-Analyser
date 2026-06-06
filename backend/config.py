@@ -21,7 +21,6 @@ class Settings(BaseSettings):
     cerebras_api_key: SecretStr
     google_api_key: SecretStr
 
-    reranker_voyage_ai_api_key: SecretStr
 
     resend_api_key: SecretStr
     cal_api_key: SecretStr
