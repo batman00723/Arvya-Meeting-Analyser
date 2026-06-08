@@ -21,7 +21,7 @@ class ZoomWebhookController(ControllerBase):
             plain_token = body["payload"]["plainToken"]
 
             encrypted_token = hmac.new(
-                settings.zoom_webhook_secret.get_secret_value(),
+                settings.zoom_webhook_secret.get_secret_value().encode(),
                 plain_token.encode(),
                 hashlib.sha256
             ).hexdigest()
