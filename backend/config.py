@@ -25,6 +25,8 @@ class Settings(BaseSettings):
     resend_api_key: SecretStr
     groq_api_key: SecretStr
 
+    zoom_webhook_secret: SecretStr
+
 
 
     model_config= SettingsConfigDict(env_file= ".env",
