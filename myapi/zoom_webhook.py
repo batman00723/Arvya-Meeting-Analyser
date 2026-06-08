@@ -1,19 +1,12 @@
 import json
 import hmac
 import hashlib
+
 from ninja_extra import api_controller, ControllerBase, http_post
 from django.http import JsonResponse
 from backend.config import settings
 
-
-import json
-import hmac
-import hashlib
-
-from ninja_extra import api_controller, ControllerBase, http_post
-from django.http import JsonResponse
-
-from backend.config import settings
+from myapi.services.transcript_processor import process_transcript
 
 
 @api_controller("/zoom", tags=["Zoom"])
@@ -51,6 +44,22 @@ class ZoomWebhookController(ControllerBase):
 
         elif event == "recording.transcript_completed":
             print("TRANSCRIPT COMPLETED")
+            transcript = """
+                Investment Banker: Thank you for joining.
+
+                Client: We are considering an acquisition of a healthcare company.
+
+                Investment Banker: We estimate valuation between $50M and $70M.
+
+                Client: What are the key risks?
+
+                Investment Banker: Regulatory approval and integration execution.
+                """
+
+            result = process_transcript(transcript)
+
+            print(result)
+
 
         return {
             "status": "success"

@@ -6,6 +6,9 @@ import logging
 from myapi.models import MeetingReport
 from ninja import Schema
 
+
+from myapi.services.transcript_processor import process_transcript
+
 llm= LLMService()
 meeting_agent= create_meeting_agent(llm= llm)
 
@@ -18,21 +21,13 @@ class ChatOperationController(ControllerBase):
     def agent(self, request, payload: MeetingRequest):
         print("starting to call agent")
 
-        initial_state = {
-            "transcript": payload.transcript,
-            "result": None,
-            "status": "pending"
-        }
-
-        try: 
-            final_state= meeting_agent.invoke(initial_state)
-            response= final_state.get("result")
-            print("Agent Ran Successfully.")
+        try:
+            response = process_transcript(payload.transcript)
 
             return {
                 "analysis": response
             }
-        
+            
         except Exception as e:
             logger= logging.getLogger(__name__)
             logger.error(f"Agent Execution Error: {str(e)}", exc_info= True)
