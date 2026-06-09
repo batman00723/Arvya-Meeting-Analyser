@@ -4,8 +4,16 @@
 
 import resend
 from backend.config import settings
+from myapi.models import Recipent
+import sib_api_v3_sdk
+from backend.config import settings
 
-resend.api_key= settings.resend_api_key.get_secret_value()
+configuration = sib_api_v3_sdk.Configuration()
+configuration.api_key["api-key"] = settings.brevo_api_key.get_secret_value()
+
+api_instance = sib_api_v3_sdk.TransactionalEmailsApi(
+    sib_api_v3_sdk.ApiClient(configuration)
+)
 
 
 def build_report_html(report):
@@ -72,21 +80,44 @@ def build_report_html(report):
     </html>
     """
 
+
 def send_report(report):
     try:
         html = build_report_html(report)
-        params = {
-            "from": "onboarding@resend.dev",
-            "to": ["batmanmishra23@gmail.com"],  
-            "subject": "Investment Banking Meeting Report",
-            "html": html,
-        }
+        recipients = Recipent.objects.all()
 
-        response = resend.Emails.send(params)
-        print(f"Sent Report to Sir: {response}")
+        bcc_emails = [
+            {"email": recipient.email}
+            for recipient in recipients
+        ]
+
+        to_emails = [
+            {"email": recipient.email}
+            for recipient in recipients
+        ]
+        
+
+        email = sib_api_v3_sdk.SendSmtpEmail(
+            sender={
+                "name": "Arvya Meeting Analyser",
+                "email": "batmanmishra23@gmail.com"
+            },
+            to= [{"email": "amanmishra232005@gmail.com"}],
+            bcc=bcc_emails,
+            subject="Investment Banking Meeting Report",
+            html_content=html
+        )
+        print("Recipients in DB:", recipients.count())
+        print("BCC:", bcc_emails)
+
+        response = api_instance.send_transac_email(email)
+
+        print(f"Email sent successfully: {response}")
+
         return response
+
     except Exception as e:
-        print({f"Error sending email: {e}"})
+        print(f"Error sending email: {e}")
         return None
-
-
+    
+    
