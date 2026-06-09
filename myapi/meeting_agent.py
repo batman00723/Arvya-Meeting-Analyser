@@ -15,7 +15,7 @@ meeting_agent= create_meeting_agent(llm= llm)
 class MeetingRequest(Schema):
     transcript: str
 
-@api_controller("/analyse", tags= ['Chatbot'])
+@api_controller("/analyse", tags= ['Transcript → Report'])
 class ChatOperationController(ControllerBase):
     @http_post("/receptionist")
     def agent(self, request, payload: MeetingRequest):

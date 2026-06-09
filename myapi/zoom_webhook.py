@@ -1,3 +1,5 @@
+# This zoom webhook is not used as I need zoom pro for access for zoom cloud so im switching to zoom local free tier.
+
 import json
 import hmac
 import hashlib

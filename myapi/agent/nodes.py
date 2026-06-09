@@ -136,10 +136,7 @@ def analyse_meeting_node(state: MeetingState):
 
         """
     
-    result= llm.get_structured(
-        MeetingAnalysis,
-        system_prompt
-        )
+    result= llm.get_structured(MeetingAnalysis, system_prompt)
 
     return {
         "result": result,

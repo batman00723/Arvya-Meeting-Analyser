@@ -1,3 +1,4 @@
+# Watccher is for local dev. For depolyment I might go with google drive pooling with drive integration.
 
 import os
 import django

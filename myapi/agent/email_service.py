@@ -9,7 +9,6 @@ resend.api_key= settings.resend_api_key.get_secret_value()
 
 
 def build_report_html(report):
-
     action_items_html = "".join(
         f"""
         <tr>
@@ -20,12 +19,10 @@ def build_report_html(report):
         """
         for item in report.action_items
     )
-
     discussion_topics_html = "".join(
         f"<li>{topic}</li>"
         for topic in report.discussion_topics
     )
-
     risks_html = "".join(
         f"<li>{risk}</li>"
         for risk in report.risks

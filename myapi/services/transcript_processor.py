@@ -6,7 +6,6 @@ meeting_agent = create_meeting_agent(llm=llm)
 
 
 def process_transcript(transcript: str):
-
     print("Transcription is processing")
 
     initial_state = {
@@ -15,7 +14,13 @@ def process_transcript(transcript: str):
         "status": "pending"
     }
 
-    final_state = meeting_agent.invoke(initial_state)
-    print(final_state.get("result"))
+    try:
+        final_state = meeting_agent.invoke(initial_state)
 
-    return final_state.get("result")
+        print(final_state.get("result"))
+
+        return final_state.get("result")
+
+    except Exception as e:
+        print(f"Transcript processing failed: {e}")
+        raise
