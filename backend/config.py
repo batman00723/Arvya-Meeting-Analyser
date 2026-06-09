@@ -27,6 +27,8 @@ class Settings(BaseSettings):
 
     zoom_webhook_secret: SecretStr
 
+    brevo_api_key: SecretStr
+
 
 
     model_config= SettingsConfigDict(env_file= ".env",
