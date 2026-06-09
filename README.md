@@ -200,7 +200,7 @@ This guarantees that report generation and persistence occur before external del
 
 ## Email
 
-* Resend
+* Bravo
 
 ## Deployment
 
