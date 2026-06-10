@@ -1,6 +1,6 @@
 # Arvya Meeting Analyser
 
-A meeting intelligence system that converts raw meeting recordings into structured investment banking and private equity insights using SST, workflow orchestration, and LLM based information extraction.
+A meeting intelligence system that converts raw meeting recordings and transcripts into structured investment banking and private equity insights using Whisper-based speech-to-text, LangGraph workflow orchestration, and LLM-powered information extraction.
 
 The system automates the post-meeting workflow of transcription, analysis, persistence, and report generation and delivery.
 
@@ -16,11 +16,19 @@ This project automates that workflow by transforming unstructured meeting conver
 
 # System Architecture
 
+
 <p align="center">
   <img src="Meeting Analyser System Design.png" width="900" title="System Design">
 </p>---
 
----
+## Engineering Decisions and Tradeoffs
+
+- UUID-prefixed filenames are used to avoid collisions between uploaded audio files.
+- Audio files are deleted after transcription using a try/finally cleanup pattern.
+- Both the transcript and the structured report are persisted to allow future reprocessing.
+- Recipients are delivered through BCC to preserve subscriber privacy.
+- LangGraph is used to model the workflow as composable processing nodes.
+
 
 # Core Design Principle
 
@@ -126,6 +134,16 @@ LLM outputs are constrained using structured schemas.
 
 Extracted entities include:
 
+- Executive Summary
+- Discussion Topics
+- Action Items
+- Decisions
+- Unresolved Questions
+- Risks
+- Sentiment
+- Deal Intelligence
+- Financial Figures
+
 <p align="center">
   <img src="Screenshot 2026-06-06 215846.png" width="900" title="Email test ss">
 </p>---
@@ -157,8 +175,9 @@ This guarantees that report generation and persistence occur before external del
 
 ## LLM Layer
 
-* Groq
+* Groq Interference
 * Qwen3 32B
+* Whisper large v3
 
 ## Database
 
@@ -167,7 +186,7 @@ This guarantees that report generation and persistence occur before external del
 
 ## Email
 
-* Bravo
+* Brevo 
 
 ## Deployment
 
@@ -175,19 +194,19 @@ This guarantees that report generation and persistence occur before external del
 
 ---
 
-## File Handling
+## Why LangGraph?
 
-Uploaded audio files are stored temporarily using UUID-prefixed filenames
-to prevent collisions when multiple uploads contain identical names.
-Files are automatically removed after processing using a try/finally cleanup pattern.
+The current workflow is linear and could be implemented using sequential function calls.
 
-## Engineering Decisions and Tradeoffs
+LangGraph was chosen to support future workflow expansion, including:
 
-- UUID-prefixed filenames are used to avoid collisions between uploaded audio files.
-- Audio files are deleted after transcription using a try/finally cleanup pattern.
-- Both the transcript and the structured report are persisted to allow future reprocessing.
-- Recipients are delivered through BCC to preserve subscriber privacy.
-- LangGraph is used to model the workflow as composable processing nodes.
+- Human approval stages
+- Compliance review nodes
+- Conditional branching
+- Retry handling
+- Domain specific analysis agents
+
+This keeps the workflow extensible while maintaining a clear execution graph.
 
 # Future Work
 
