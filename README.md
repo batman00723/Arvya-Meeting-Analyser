@@ -208,6 +208,20 @@ This guarantees that report generation and persistence occur before external del
 
 ---
 
+## File Handling
+
+Uploaded audio files are stored temporarily using UUID-prefixed filenames
+to prevent collisions when multiple uploads contain identical names.
+Files are automatically removed after processing using a try/finally cleanup pattern.
+
+## Engineering Decisions and Tradeoffs
+
+- UUID-prefixed filenames are used to avoid collisions between uploaded audio files.
+- Audio files are deleted after transcription using a try/finally cleanup pattern.
+- Both the transcript and the structured report are persisted to allow future reprocessing.
+- Recipients are delivered through BCC to preserve subscriber privacy.
+- LangGraph is used to model the workflow as composable processing nodes.
+
 # Future Work
 
 * Founder Meeting Intelligence Agent
