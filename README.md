@@ -17,7 +17,7 @@ This project automates that workflow by transforming unstructured meeting conver
 # System Architecture
 
 <p align="center">
-  <img src="Screenshot 2026-06-06 215846.png" width="900" title="Email test ss">
+  <img src="Meeting Analyser System Design.png" width="900" title="System Design">
 </p>---
 
 ---
