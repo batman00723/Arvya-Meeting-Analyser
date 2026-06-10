@@ -16,42 +16,9 @@ This project automates that workflow by transforming unstructured meeting conver
 
 # System Architecture
 
-```text
-Meeting Recording
-       │
-       ▼
- Audio Upload API
-       │
-       ▼
-Temporary Storage
-       │
-       ▼
- Groq Whisper STT
-       │
-       ▼
-   Transcript
-       │
-       ▼
-LangGraph Workflow
-       │
-       ▼
-┌───────────────────────┐
-│ Analyse Meeting Node  │
-└───────────────────────┘
-            │
-            ▼
-┌───────────────────────┐
-│ Save Report Node      │
-└───────────────────────┘
-            │
-            ▼
-┌───────────────────────┐
-│ Email Report Node     │
-└───────────────────────┘
-            │
-            ▼
-PostgreSQL
-```
+<p align="center">
+  <img src="Screenshot 2026-06-06 215846.png" width="900" title="Email test ss">
+</p>---
 
 ---
 
@@ -160,7 +127,7 @@ LLM outputs are constrained using structured schemas.
 Extracted entities include:
 
 <p align="center">
-  <img src="Screenshot 2026-06-06 215846.png" width="600" title="Email test ss">
+  <img src="Screenshot 2026-06-06 215846.png" width="900" title="Email test ss">
 </p>---
 
 ## Stage 5 — Persistence
